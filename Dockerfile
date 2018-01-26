@@ -1,8 +1,5 @@
 FROM node
 
-RUN apt-get clean && apt-get update && apt-get upgrade 
-RUN apt-get install -y git
-
 RUN npm install -g forever \
     nodemon
 
