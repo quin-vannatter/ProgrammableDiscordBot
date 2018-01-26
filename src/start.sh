@@ -1,4 +1,3 @@
-apt-get install -y git
 git clone https://github.com/yanisin13/ProgrammableDiscordBot.git
 cd ProgrammableDiscordBot/src
 npm install

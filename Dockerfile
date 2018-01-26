@@ -1,5 +1,7 @@
 FROM node
 
+RUN apt-get install -y git
+
 RUN npm install -g forever \
     nodemon
 
