@@ -1,9 +1,9 @@
 git clone https://github.com/yanisin13/ProgrammableDiscordBot.git
-cd ProgrammableDiscordBot
+cd ProgrammableDiscordBot/src
 npm install
 
-sed -i s/{botToken}/$BOT_TOKEN config.json
-sed -i s/{masterUserID}/$MASTER_USER_ID config.json
+sed -i s/\{botToken\}/$BOT_TOKEN/ config.json
+sed -i s/\{masterUserID\}/$MASTER_USER_ID/ config.json
 
 if [[ ! -e "approvedIDs.json" ]]; then
     echo "[]" > approvedIDs.json
