@@ -1,4 +1,4 @@
-FROM aarch64/alpine:edge  
+FROM arm64v8/alpine:3.5
 
 RUN apk --update add nodejs
 RUN apk add git
