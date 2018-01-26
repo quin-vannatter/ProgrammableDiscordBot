@@ -1,7 +1,7 @@
 FROM aarch64/alpine:edge  
 
-RUN apk --update add nodejs \
-    git
+RUN apk --update add nodejs
+RUN apk add git
 
 RUN npm install -g forever \
     nodemon
