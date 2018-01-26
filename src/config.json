@@ -1,0 +1,5 @@
+{
+    "botToken": "{botToken}",
+    "masterUserID": "{masterUserID}",
+    "botPrefix": "!"
+}
