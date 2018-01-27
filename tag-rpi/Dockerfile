@@ -1,7 +1,7 @@
-FROM arm64v8/alpine:3.5
+FROM resin/rpi-raspbian
 
-RUN apk --update add nodejs
-RUN apk add git
+RUN apk add nodejs \
+    git
 
 RUN npm install -g forever \
     nodemon
