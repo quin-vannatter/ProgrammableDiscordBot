@@ -1,5 +1,11 @@
-git clone https://github.com/yanisin13/ProgrammableDiscordBot.git
-cd ProgrammableDiscordBot/src
+if [[ ! -d "ProgrammableDiscordBot" ]]; then
+    git clone https://github.com/yanisin13/ProgrammableDiscordBot.git
+fi
+
+cd ProgrammableDiscordBot
+git pull
+
+cd src
 npm install
 
 sed -i s/\{botToken\}/$BOT_TOKEN/ config.json
