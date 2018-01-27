@@ -1,13 +1,6 @@
-FROM resin/rpi-raspbian
-	
-RUN curl -sL https://deb.nodesource.com/setup | sudo bash -
+FROM hypriot/rpi-node
 
-
-RUN apt-get update && apt-get install nodejs \
-    git \
-    npm
-
-RUN ln -s /usr/bin/nodejs /usr/bin/node
+RUN apt-get update && apt-get install git
 
 RUN npm install -g forever \
     nodemon
