@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install nodejs \
     git \
     npm
 
+RUN ln -s /usr/bin/nodejs /usr/bin/node
+
 RUN npm install -g forever \
     nodemon
 
