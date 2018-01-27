@@ -1,6 +1,6 @@
 FROM resin/rpi-raspbian
 
-RUN apk add nodejs \
+RUN apt-get install nodejs \
     git
 
 RUN npm install -g forever \
