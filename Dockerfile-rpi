@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install nodejs \
 RUN npm install -g forever \
     nodemon
 
-COPY ../src/start.sh /
+COPY src/start.sh /
 RUN chmod +x /start.sh
 
 CMD ["/bin/bash", "-c", "/start.sh"]
