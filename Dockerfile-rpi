@@ -1,4 +1,7 @@
 FROM resin/rpi-raspbian
+	
+RUN curl -sL https://deb.nodesource.com/setup | sudo bash -
+
 
 RUN apt-get update && apt-get install nodejs \
     git \
