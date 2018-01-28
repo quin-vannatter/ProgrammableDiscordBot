@@ -24,7 +24,7 @@ var global = {
     MESSAGE_CODE_EXECUTED: 'Code has been executed',
     MESSAGE_BOT_READY: 'Bot Ready',
 
-    PATTERN_USER_ID: '^\<\@[\!0-9]+\>$',
+    PATTERN_USER_ID: '^\<(\@|\#)[\!0-9]+\>$',
 
     FORMAT_CUSTOM_CODE_STRING: '"{0}"',
     FORMAT_CUSTOM_CODE_STATE: '["{0}"] = ',
