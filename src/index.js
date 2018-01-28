@@ -108,7 +108,7 @@ var global = {
         'global',
         'process'
     ],
-    CONSOLE_WAIT_TIME: 500,
+    MESSAGE_WAIT_TIME: 500,
 
     CLEAR_STATE_TIME: 3000,
     RESET_MSG_COUNT_TIME: 3000,
@@ -118,8 +118,8 @@ var global = {
     userRepo: [],
     messageCount: 0,
 
-    console: {
-        init: () => global.console.promise = new Promise(r => global.console.resolve = r),
+    message: {
+        init: () => global.message.promise = new Promise(r => global.message.resolve = r),
         queue: [],
     },
     load: () => {
@@ -128,7 +128,7 @@ var global = {
         g.client = new g.discord.Client();
 
         g.client.on('ready', () => {
-            g.console.init();
+            g.message.init();
             g.log(g.MESSAGE_BOT_READY);
             g.loadState().then(() => {
                 _.custom.events.filter(event => event.eventName === 'ready').forEach(event => event.func());
@@ -202,28 +202,111 @@ var global = {
             }
         });
     },
-    flushConsoleQueue: r => {
+    updateMessage: (id, messageId, content) => {
         var g = global;
-        var message = !r ? g.format(g.FORMAT_CODE_BLOCK, g.console.queue.join('\n')) : g.console.queue.join('\n');
-        var promise;
-        if (!g.checkExists('_.bot.lastMessage.channel.id')) {
-            promise = new Promise(r => {
-                g.log(message);
-                r();
-            });
-        } else {
-            switch (_.bot.lastMessage.channel.type) {
-                case 'text':
-                    promise = g.client.channels.get(_.bot.lastMessage.channel.id).send(message).catch(g.logPromiseRejection);
-                    break;
-                case 'dm':
-                    promise = g.client.channels.get(_.bot.lastMessage.channel.id).recipient.send(message).catch(g.logPromiseRejection);
-                    break;
+        g.getMessage(id, messageId).then(message => message.edit(content).catch(global.logPromiseRejection));
+    },
+    deleteMessage: (id, messageId) => {
+        var g = global;
+        g.getMessage(id, messageId).then(message => message.delete().catch(global.logPromiseRejection));
+    },
+    getMessage: (id, messageId) => {
+        var g = global;
+        switch(g.getChannel(id).type) {
+            case 'text':
+                return g.client.channels.get(id).fetchMessage(messageId);
+                break;
+            case 'dm':
+                return g.client.fetchUser(id).then(user => user.dmChannel.fetchMessage(messageId));
+                break
+                
+        } 
+    },
+    queueMessage: (id, message) => {
+        var g = global;
+        g.message.queue.push({
+            content: message,
+            channel: g.getChannel(id)
+        });
+        clearInterval(g.pushInt);
+        g.pushInt = setInterval(() => g.writeMessage(), g.MESSAGE_WAIT_TIME);
+        return g.message.promise;
+    },
+    writeMessage: () => {
+        var g = global;
+        var channels = [];
+        var promises = [];
+        g.message.queue.forEach(item => {
+            if(!~channels.map(x => x.id).indexOf(item.channel.id)) {
+                channels.push(item.channel);
+            }
+        });
+        channels.forEach(channel => {
+            var messages = g.message.queue.filter(item => item.channel.id === channel.id).map(item => item.content);
+            while(messages.length > 0) {
+                var count = 1;
+                var message = messages.slice(0, count)
+                while(message.join('\n').length < 2000 && message.length < count) {
+                    count++;
+                    message = messages.slice(0, count);
+                }
+                count = message.join('\n') > 2000 ? count - 1 : count;
+                message = messages.slice(0, count).join('\n');
+                messages.splice(0, count);
+                messageSegs = g.divideMessage(message);
+                messageSegs.forEach(seg => {
+                    switch (channel.type) {
+                        case 'text':
+                                promises.push(g.client.channels.get(channel.id).send(seg).then(message => g.clean(message)));
+                            break;
+                        case 'dm':
+                                promises.push(g.client.fetchUser(channel.id).then(user => user.send(seg)).then(message => global.clean(message)));
+                            break;
+                    }
+                });
+            }
+        });
+        g.message.queue = [];
+        Promise.all(promises).then(messages => g.message.resolve(messages)).catch(g.logPromiseRejection);
+        clearInterval(g.pushInt);
+    },
+    divideMessage: message => {
+        var g = global;
+        var segs = [];
+        while(message.length > 0) {
+            if(g.isCodeBlock(message)) {
+                message = g.getCodeBlock(message).split('\n');
+                var count = 0;
+                var currentSeg = [];
+                var resolvedSeg = '';
+                while(resolvedSeg.length < 2000 && count <= message.length) {
+                    count++;
+                    currentSeg = message.slice(0, count);
+                    resolvedSeg = g.format(g.FORMAT_CODE_BLOCK, currentSeg.join('\n'));
+                }
+                count = resolvedSeg.length > 2000 ? count - 1 : count;
+                if(count > 0) {
+                    currentSeg = message.slice(0, count);
+                    resolvedSeg = g.format(g.FORMAT_CODE_BLOCK, currentSeg.join('\n'));
+                    message.splice(0, count);
+                    segs.push(resolvedSeg);
+                } else {
+                    var divide = message[0];
+                    message.splice(0,1);
+                    var dividedLines = [];
+                    while(divide.length > 0) {
+                        dividedLines.push(divide.substr(0,2000 - g.FORMAT_CODE_BLOCK.length));
+                        divide = divide.substr(2000 - g.FORMAT_CODE_BLOCK.length);
+                    }
+                    message = [...dividedLines, ...message];
+                }
+                message = message.length > 0 ? g.format(g.FORMAT_CODE_BLOCK, message.join('\n')) : '';
+            } else {
+                segs.push(message.substr(0, 2000));
+                message = message.substr(2000);
             }
         }
-        g.console.queue = [];
-        promise.then(() => g.console.resolve());
-        clearInterval(g.pushInt);
+        return segs;
     },
     logPromiseRejection: message => {
         var g = global;
@@ -239,7 +322,9 @@ var global = {
         try {
             var codeBlock = g.removeWords(g.getCodeBlock(code), g.FLAGGED_WORDS);
             eval(codeBlock);
-            console.log(g.MESSAGE_CODE_EXECUTED, true);
+            if(g.message.queue.length == 0) {
+                console.log(g.MESSAGE_CODE_EXECUTED, true);
+            }
         } catch (e) {
             g.logError(e);
         }
@@ -369,6 +454,12 @@ var global = {
         }
         return Promise.all(promises);
     },
+    getChannel: id => {
+        return {
+            id: id,
+            type: global.client.channels.get(id) ? 'text' : 'dm'
+        }
+    },
     checkStateDump: () => {
         var g = global;
         g.fs.readFile(g.LOCATION_STATE_DUMP, (err, data) => {
@@ -397,18 +488,9 @@ var global = {
     },
     bot: {
         message: {
-            create: (channelID, content, properties) => global.client.channels.get(channelID).send(content, properties)
-                .then(message => global.clean(message)).catch(global.logPromiseRejection),
-            update: (channelID, messageID, content) => global.client.channels.get(channelID)
-                .fetchMessage(messageID).then(message => message.edit(content).catch(global.logPromiseRejection)),
-            delete: (channelID, messageID) => global.client.channels.get(channelID)
-                .fetchMessage(messageID).then(message => message.delete().catch(global.logPromiseRejection))
-        },
-        userMessage: {
-            create: (userID, content) => global.client.fetchUser(userID).then(user => user.send(content)
-                .then(message => global.clean(message)).catch(global.logPromiseRejection)).catch(global.logPromiseRejection),
-            update: () => {},
-            delete: () => {}
+            create: (id, content) => global.queueMessage(id, content),
+            update: (id, messageID, content) => global.updateMessage(id, messageID, content),
+            delete: (id, messageID) => global.deleteMessage(id, messageID)
         },
         command: {
             add: (name, func) => global.loadFunc(name, func, _.custom.commands),
@@ -446,10 +528,10 @@ var global = {
         var g = global;
         console.log = (x, r) => {
             var g = global;
-            g.console.queue.push(x + '');
-            clearInterval(g.pushInt);
-            g.pushInt = setInterval(() => g.flushConsoleQueue(r), g.CONSOLE_WAIT_TIME);
-            return g.console.promise;
+            var c = _.bot.lastMessage.channel;
+            var message = !r ? g.format(g.FORMAT_CODE_BLOCK, x + '') : x + '';
+            g.log(message)
+            return g.queueMessage(c.type === 'text' ? c.id : c.recipient.id, message);
         }
         _.bot = g.bot;
     },
@@ -518,9 +600,12 @@ var global = {
         }).then(() => g.fs.writeFile(g.LOCATION_STATE_DUMP, '', () => {}))
             .catch(g.logPromiseRejection);
     },
-    getLog: () => _.bot.message.create(_.bot.lastMessage.channel.id, {
-        file: global.LOCATION_BOT_LOG
-    }).catch(global.logPromiseRejection),
+    getLog: () => {
+        var g = global;
+        return g.fs.readFile(g.LOCATION_BOT_LOG, (err, data) => {
+            console.log(data, true);
+        });
+    },
     getID: rawID => {
         var patt = new RegExp('[0-9]+');
         return patt.exec(rawID)[0];
