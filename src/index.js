@@ -154,7 +154,7 @@ var global = {
                     var command = [...g.BASE_COMMANDS, ..._.custom.commands].find(command => !!~[].concat(command.name).indexOf(segs[0].split(g.config.botPrefix)[1]));
                     if (command && (!command.masterUserCommand || (command.masterUserCommand && g.isMasterUser()))) {
                         try {
-                            command.func(...segs.slice(1));
+                            command.func(...[g.clean(message), ...segs.slice(1)]);
                         } catch(e) {
                             g.logError(e);
                         }
