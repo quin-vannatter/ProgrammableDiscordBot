@@ -34,32 +34,32 @@ var global = {
         {
             name: ['execute', 'e'],
             masterUserCommand: false,
-            func: id => global.loadMessage(id)
+            func: (x, id) => global.loadMessage(id)
         },
         {
             name: ['approve-message', 'am'],
             masterUserCommand: true,
-            func: id => global.approveMessage(id)
+            func: (x, id) => global.approveMessage(id)
         },
         {
             name: ['is-approved', 'ia'],
             masterUserCommand: false,
-            func: id => console.log(global.isApproved(id))
+            func: (x, id) => console.log(global.isApproved(id))
         },
         {
             name: ['disapprove-message', 'dm'],
             masterUserCommand: true,
-            func: id => global.disapproveMessage(id)
+            func: (x, id) => global.disapproveMessage(id)
         },
         {
             name: ['approve-user', 'au'],
             masterUserCommand: true,
-            func: id => global.approveUser(id)
+            func: (x, id) => global.approveUser(id)
         },
         {
             name: ['disapprove-user', 'du'],
             masterUserCommand: true,
-            func: id => global.disapproveUser(id)
+            func: (x, id) => global.disapproveUser(id)
         },
         {
             name: ['clear-approved', 'ca'],
