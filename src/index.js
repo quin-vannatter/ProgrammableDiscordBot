@@ -204,11 +204,15 @@ var global = {
     },
     updateMessage: (id, messageId, content) => {
         var g = global;
-        g.getMessage(id, messageId).then(message => message.edit(content).catch(global.logPromiseRejection));
+        g.getMessage(id, messageId).then(message => message.edit(content).catch(g.logPromiseRejection));
     },
     deleteMessage: (id, messageId) => {
         var g = global;
-        g.getMessage(id, messageId).then(message => message.delete().catch(global.logPromiseRejection));
+        g.getMessage(id, messageId).then(message => message.delete().catch(g.logPromiseRejection));
+    },
+    reactMessage:(id, messageId, content) => {
+        var g = global;
+        g.getMessage(id, messageId).then(message => message.react(content).catch(g.logPromiseRejection));
     },
     getMessage: (id, messageId) => {
         var g = global;
@@ -490,7 +494,8 @@ var global = {
         message: {
             create: (id, content) => global.queueMessage(id, content),
             update: (id, messageID, content) => global.updateMessage(id, messageID, content),
-            delete: (id, messageID) => global.deleteMessage(id, messageID)
+            delete: (id, messageID) => global.deleteMessage(id, messageID),
+            react: (id, messageID, content) => global.reactMessage(id, messageID, content)
         },
         command: {
             add: (name, func) => global.loadFunc(name, func, _.custom.commands),
