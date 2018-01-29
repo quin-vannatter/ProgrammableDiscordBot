@@ -212,7 +212,7 @@ var global = {
     },
     reactMessage:(id, messageId, content) => {
         var g = global;
-        g.getMessage(id, messageId).then(message => message.react(content).catch(g.logPromiseRejection));
+        g.getMessage(id, messageId).then(message => message.react(g.client.emojis.find("name", content).id).catch(g.logPromiseRejection));
     },
     getMessage: (id, messageId) => {
         var g = global;
