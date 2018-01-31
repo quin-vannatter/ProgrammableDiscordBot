@@ -5,7 +5,8 @@ var global = {
     https: require('https'),
 
     LOCATION_CONFIG: 'config.json',
-    LOCATION_APPROVED_IDS: 'approvedIDs.json',
+    LOCATION_EMOJIS: 'emojis.json',
+    LOCATION_APPROVED_IDS: 'approvedIds.json',
     LOCATION_BOT_LOG: 'log.txt',
     LOCATION_STATE: 'state.js',
     LOCATION_STATE_DUMP: 'stateDump.js',
@@ -29,6 +30,7 @@ var global = {
     FORMAT_CUSTOM_CODE_STRING: '"{0}"',
     FORMAT_CUSTOM_CODE_STATE: '["{0}"] = ',
     FORMAT_CUSTOM_CODE_PARENT: '["{0}"]',
+    FORMAT_EMOJI: ':{0}:',
 
     BASE_COMMANDS: [
         {
@@ -148,7 +150,7 @@ var global = {
                     var segs = message.content.toString().split('`')
                         .map((x, i) => i % 2 == 1 ? encodeURIComponent(x) : x).join('').split(' ').map(x => {
                             x = decodeURIComponent(x);
-                            x = g.testPattern(x, g.PATTERN_USER_ID) ? g.getID(x) : x;
+                            x = g.testPattern(x, g.PATTERN_USER_ID) ? g.parseId(x) : x;
                             return x;
                         });
                     var command = [...g.BASE_COMMANDS, ..._.custom.commands].find(command => !!~[].concat(command.name).indexOf(segs[0].split(g.config.botPrefix)[1]));
@@ -210,9 +212,9 @@ var global = {
         var g = global;
         g.getMessage(id, messageId).then(message => message.delete().catch(g.logPromiseRejection));
     },
-    reactMessage:(id, messageId, content) => {
+    reactMessage:(id, messageId, name) => {
         var g = global;
-        g.getMessage(id, messageId).then(message => message.react(g.client.emojis.find("name", content).id).catch(g.logPromiseRejection));
+        g.getMessage(id, messageId).then(message => message.react(g.getEmoji(name)).catch(g.logPromiseRejection));
     },
     getMessage: (id, messageId) => {
         var g = global;
@@ -224,7 +226,12 @@ var global = {
                 return g.client.fetchUser(id).then(user => user.dmChannel.fetchMessage(messageId));
                 break
                 
-        } 
+        }
+    },
+    getEmoji: name => {
+        var g = global;
+        var custom = g.client.emojis.find("name", g.parseEmoji(name));
+        return custom == null ? g.emojis.find(x => x.name === name).value : custom;
     },
     queueMessage: (id, message) => {
         var g = global;
@@ -344,7 +351,7 @@ var global = {
     approveUser: user => {
         var g = global;
         if (g.isMasterUser()) {
-            g.approvedIDs.push(user);
+            g.approvedIds.push(user);
             console.log(g.format(g.FORMAT_APPROVE_USER, user), true);
         }
     },
@@ -352,18 +359,18 @@ var global = {
         var g = global;
         if (g.isMasterUser()) {
             if (g.isApproved(user.id)) {
-                g.approvedIDs.splice(g.approvedIDs.indexOf(user.id), 1);
+                g.approvedIds.splice(g.approvedIds.indexOf(user.id), 1);
                 console.log(g.format(g.FORMAT_REVOKE_APPROVAL_USER, user), true);
             }
         }
     },
-    approveMessage: messageID => {
+    approveMessage: messageId => {
         var g = global;
         if (g.isMasterUser()) {
-            g.client.channels.get(_.bot.lastMessage.channel.id).fetchMessage(messageID)
+            g.client.channels.get(_.bot.lastMessage.channel.id).fetchMessage(messageId)
                 .then(message => {
                     g.client.channels.get(_.bot.lastMessage.channel.id).send(message.content).then(message => {
-                        g.approvedIDs.push(message.id);
+                        g.approvedIds.push(message.id);
                         console.log(g.format(g.FORMAT_APPROVE_MESSAGE, message.id), true);
                     }).catch(g.logPromiseRejection);
                 });
@@ -371,14 +378,14 @@ var global = {
     },
     clearApproved: () => {
         var g = global;
-        g.approvedIDs = [];
+        g.approvedIds = [];
     },
-    disapproveMessage: messageID => {
+    disapproveMessage: messageId => {
         var g = global;
         if (global.isMasterUser()) {
-            if (!!~global.approvedIDs.indexOf(messageID)) {
-                global.approvedIDs.splice(global.approvedIDs.indexOf(messageID), 1);
-                console.log(global.format(g.FORMAT_REVOKE_APPROVAL_MESSAGE, messageID), true);
+            if (!!~global.approvedIds.indexOf(messageId)) {
+                global.approvedIds.splice(global.approvedIds.indexOf(messageId), 1);
+                console.log(global.format(g.FORMAT_REVOKE_APPROVAL_MESSAGE, messageId), true);
             }
         }
     },
@@ -388,7 +395,7 @@ var global = {
     },
     isMasterUser: () => {
         var g = global;
-        return (!_.bot || !_.bot.lastMessage) || _.bot.lastMessage.author.id === g.config.masterUserID;
+        return (!_.bot || !_.bot.lastMessage) || _.bot.lastMessage.author.id === g.config.masterUserId;
     },
     userCanExecute: () => {
         var g = global;
@@ -405,7 +412,7 @@ var global = {
     },
     isApproved: id => {
         var g = global;
-        return !!~[...g.approvedIDs, g.config.masterUserID].indexOf(id);
+        return !!~[...g.approvedIds, g.config.masterUserId].indexOf(id);
     },
     saveState: () => {
         var g = global;
@@ -413,7 +420,7 @@ var global = {
         delete (_.bot);
         var customContent = g.createEvalScript(['_'], _);
         promises.push(new Promise(r => g.fs.writeFile(g.LOCATION_STATE, customContent.join(';\n') + ';', () => r())));
-        promises.push(new Promise(r => g.fs.writeFile(g.LOCATION_APPROVED_IDS, JSON.stringify(g.approvedIDs), () => r())));
+        promises.push(new Promise(r => g.fs.writeFile(g.LOCATION_APPROVED_IDS, JSON.stringify(g.approvedIds), () => r())));
         g.refresh();
         return Promise.all(promises);
     },
@@ -448,10 +455,10 @@ var global = {
             promises.push(new Promise(r => g.fs.readFile(g.LOCATION_APPROVED_IDS, (err, data) => {
                 try {
                     if (data) {
-                        g.approvedIDs = JSON.parse(data.toString());
+                        g.approvedIds = JSON.parse(data.toString());
                     }
                 } catch (e) {
-                    g.approvedIDs = [];
+                    g.approvedIds = [];
                 }
                 r();
             })));
@@ -493,9 +500,9 @@ var global = {
     bot: {
         message: {
             create: (id, content) => global.queueMessage(id, content),
-            update: (id, messageID, content) => global.updateMessage(id, messageID, content),
-            delete: (id, messageID) => global.deleteMessage(id, messageID),
-            react: (id, messageID, content) => global.reactMessage(id, messageID, content)
+            update: (id, messageId, content) => global.updateMessage(id, messageId, content),
+            delete: (id, messageId) => global.deleteMessage(id, messageId),
+            react: (id, messageId, name) => global.reactMessage(id, messageId, name)
         },
         command: {
             add: (name, func) => global.loadFunc(name, func, _.custom.commands),
@@ -611,9 +618,12 @@ var global = {
             console.log(data, true);
         });
     },
-    getID: rawID => {
+    parseId: rawId => {
         var patt = new RegExp('[0-9]+');
-        return patt.exec(rawID)[0];
+        return patt.exec(rawId)[0];
+    },
+    parseEmoji: rawId => {
+        return rawId.substr(1, rawId.length - 2);
     },
     getFile: url => {
         var g = global;
@@ -653,10 +663,19 @@ var global = {
 
 global.log = console.log;
 global.refresh();
-
-require('fs').readFile(global.LOCATION_CONFIG, (err, data) => {
+var fs = require('fs');
+var promises = [];
+promises.push(new Promise(r => fs.readFile(global.LOCATION_CONFIG, (err, data) => {
     global.config = JSON.parse(data);
+    r();
+})));
+promises.push(new Promise(r => fs.readFile(global.LOCATION_EMOJIS, (err, data) => {
+    global.emojis = JSON.parse(data);
+    r();
+})));
+Promise.all(promises).then(() => {
+    fs = undefined;
+    require = undefined;
+    promises = undefined;
     global.load();
-});
-
-require = undefined;
+})
