@@ -11,7 +11,7 @@ npm install
 sed -i s/\{botToken\}/$BOT_TOKEN/ config.json
 sed -i s/\{masterUserID\}/$MASTER_USER_ID/ config.json
 
-if [[ ! -e "approvedIDs.json" ]]; then
+if [[ ! -e "approvedIds.json" ]]; then
     echo "[]" > approvedIDs.json
 fi
 
