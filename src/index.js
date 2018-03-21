@@ -621,7 +621,7 @@ var global = {
     outputStateDump: () => {
         var g = global;
         return g.fs.readFile(g.LOCATION_STATE_DUMP, (err, data) => {
-            console.log(data, true);
+            console.log(data);
         });
     },
     getLog: () => {
