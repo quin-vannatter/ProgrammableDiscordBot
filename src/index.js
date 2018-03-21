@@ -520,7 +520,7 @@ var global = {
             }
         },
         log: x => global.log(x),
-        https: (options, func) => global.https(options, func)
+        https: (options, func) => global.httpsRequest(options, func)
     },
     removeFunc: (name, array) => {
         array.forEach((v, i) => {
@@ -601,7 +601,7 @@ var global = {
         }
         return result;
     },
-    https: (options, func) => {
+    httpsRequest: (options, func) => {
         var g = global;
         g.https.request(options, res => {
             g.log('statusCode:', res.statusCode);
