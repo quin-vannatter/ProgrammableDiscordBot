@@ -631,7 +631,7 @@ var global = {
     getLog: () => {
         var g = global;
         return g.fs.readFile(g.LOCATION_BOT_LOG, (err, data) => {
-            console.log(data.split('\n').slice(-20).join('\n'), true);
+            console.log(data.toString().split('\n').slice(-20).join('\n'), true);
         });
     },
     parseId: rawId => {
