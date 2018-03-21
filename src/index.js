@@ -231,7 +231,7 @@ var global = {
     getEmoji: name => {
         var g = global;
         var custom = g.client.emojis.find("name", g.parseEmoji(name));
-        return custom == null ? g.emojis.find(x => x.name === name).value : custom;
+        return custom == null ? (name.length == 1 ? name : g.emojis.find(x => x.name === name).value) : custom;
     },
     queueMessage: (id, message) => {
         var g = global;
@@ -512,12 +512,15 @@ var global = {
             add: (name, func, eventName) => global.loadFunc(name, func, _.custom.events, eventName),
             remove: name => global.removeFunc(name, _.custom.events)
         },
-        setNickname: (guild, name, user) => {
-            user = typeof(user) === 'undefined' ? global.client.user.id : user;
-            return global.client.guilds.get(guild).fetchMember(user)
-                .then(member => member.setNickname(name)).catch(global.logPromiseRejection)
+        nickname: {
+            set: (guild, name, user) => {
+                user = typeof(user) === 'undefined' ? global.client.user.id : user;
+                return global.client.guilds.get(guild).fetchMember(user)
+                    .then(member => member.setNickname(name)).catch(global.logPromiseRejection)
+            }
         },
-        log: x => global.log(x)
+        log: x => global.log(x),
+        https: (options, func) => global.https(options, func)
     },
     removeFunc: (name, array) => {
         array.forEach((v, i) => {
@@ -598,6 +601,16 @@ var global = {
         }
         return result;
     },
+    https: (options, func) => {
+        var g = global;
+        g.https.request(options, res => {
+            g.log('statusCode:', res.statusCode);
+            g.log('headers:', res.headers);
+            res.on('data', func);
+        }).on('error', e => {
+            g.log(e);
+        });
+    },
     dumpState: () => {
         var g = global;
         delete (_.bot);
@@ -607,15 +620,14 @@ var global = {
     },
     outputStateDump: () => {
         var g = global;
-        _.bot.message.create(_.bot.lastMessage.channel.id, {
-            file: g.LOCATION_STATE_DUMP
-        }).then(() => g.fs.writeFile(g.LOCATION_STATE_DUMP, '', () => {}))
-            .catch(g.logPromiseRejection);
+        return g.fs.readFile(g.LOCATION_STATE_DUMP, (err, data) => {
+            console.log(data, true);
+        });
     },
     getLog: () => {
         var g = global;
         return g.fs.readFile(g.LOCATION_BOT_LOG, (err, data) => {
-            console.log(data, true);
+            console.log(data.split('\n').slice(-20).join('\n'), true);
         });
     },
     parseId: rawId => {

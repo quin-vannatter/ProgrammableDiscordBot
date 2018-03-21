@@ -5,7 +5,10 @@ RUN apt-get update && apt-get install git
 RUN npm install -g forever \
     nodemon
 
+COPY src/update-start.sh /
 COPY src/start.sh /
-RUN chmod +x /start.sh
+
+RUN chmod +x /update-start.sh && \
+    chmod +x /start.sh
 
 CMD ["/bin/bash", "-c", "/start.sh"]
