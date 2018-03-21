@@ -543,10 +543,14 @@ var global = {
         var g = global;
         console.log = (x, r) => {
             var g = global;
-            var c = _.bot.lastMessage.channel;
             var message = !r ? g.format(g.FORMAT_CODE_BLOCK, x + '') : x + '';
-            g.log(message)
-            return g.queueMessage(c.type === 'text' ? c.id : c.recipient.id, message);
+            g.log(message);
+            if(_ && _.bot && _.bot.lastMessage && _.bot.lastMessage.channel) {
+                var c = _.bot.lastMessage.channel;
+                return g.queueMessage(c.type === 'text' ? c.id : c.recipient.id, message);
+            } else {
+                return undefined;
+            }
         }
         _.bot = g.bot;
     },
