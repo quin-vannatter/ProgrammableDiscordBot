@@ -549,7 +549,7 @@ var global = {
                 var c = _.bot.lastMessage.channel;
                 return g.queueMessage(c.type === 'text' ? c.id : c.recipient.id, message);
             } else {
-                return undefined;
+                return new Promise(r => r());
             }
         }
         _.bot = g.bot;
